@@ -9,10 +9,10 @@ export class DatosGym {
     @Column({ type: 'date' })
     fechaEntrada: Date;
 
-    @Column({ type: 'date' })
+    @Column({ type: 'date', nullable:true })
     fechaPago: Date;
 
-    @Column()
+    @Column({nullable:true})
     suscripcion: string;
 
     @Column()

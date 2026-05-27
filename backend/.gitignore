@@ -2,7 +2,7 @@
 /dist
 /node_modules
 /build
-
+.wwebjs_auth/
 # Logs
 logs
 *.log

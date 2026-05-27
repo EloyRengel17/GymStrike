@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsuariosModule } from './usuarios/usuarios.module';
+import { ActividadModule } from './actividad/actividad.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -11,18 +13,28 @@ import { UsuariosModule } from './usuarios/usuarios.module';
       isGlobal: true,
     }),
 
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5433,
-      username: 'admin',
-      password: 'supersecretpassword',
-      database: 'gymstrike_db',
-      autoLoadEntities: true,
-      synchronize: true, // ¡Crea las tablas automáticamente en desarrollo!
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      // Recibes la instancia 'configService' aquí:
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        // Usas la instancia minúscula que recibiste:
+        host: configService.get<string>('BD_HOST'),
+        port: 5433,
+        username: configService.get<string>('DB_USER'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_NAME'),
+        autoLoadEntities: true,
+        synchronize: true,
+      }),
     }),
 
     UsuariosModule,
+
+    ActividadModule,
+
+    WhatsappModule,
   ],
   controllers: [AppController],
   providers: [AppService],
