@@ -16,4 +16,6 @@ export class Actividad {
     @Column({ nullable:true})
     horaSalida:Date;
 
+    @Column()
+    tipoUsuario:string;
 }

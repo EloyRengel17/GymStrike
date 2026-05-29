@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ActividadService } from './actividad.service';
 import { CreateActividadDto } from './dto/create-actividad.dto';
 import { UpdateActividadDto } from './dto/update-actividad.dto';
 
 @Controller('actividad')
 export class ActividadController {
-  constructor(private readonly actividadService: ActividadService) {}
+  constructor(private readonly actividadService: ActividadService) { }
 
   @Post()
   create(@Body() createActividadDto: CreateActividadDto) {
@@ -13,8 +13,8 @@ export class ActividadController {
   }
 
   @Get()
-  findAll() {
-    return this.actividadService.findAll();
+  async findAll(@Query('cantidadPersonas') cantidadPersonas: string) {
+    return await this.actividadService.findAll(cantidadPersonas === 'true');
   }
 
   @Get(':id')
@@ -22,6 +22,6 @@ export class ActividadController {
     return this.actividadService.findOne(id);
   }
 
-  
-  
+
+
 }

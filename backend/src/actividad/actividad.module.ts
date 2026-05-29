@@ -8,6 +8,7 @@ import { UsuariosModule } from 'src/usuarios/usuarios.module';
   imports:[TypeOrmModule.forFeature([Actividad]), UsuariosModule],
   controllers: [ActividadController],
   providers: [ActividadService],
+  exports:[ActividadService]
 })
 export class ActividadModule {}
  

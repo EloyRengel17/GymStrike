@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ActividadModule } from './actividad/actividad.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { CronModule } from './cron/cron.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -35,6 +37,9 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     ActividadModule,
 
     WhatsappModule,
+
+    ScheduleModule.forRoot(),
+    CronModule,
   ],
   controllers: [AppController],
   providers: [AppService],

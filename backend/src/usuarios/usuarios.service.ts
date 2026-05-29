@@ -64,10 +64,16 @@ export class UsuariosService {
       datosGym: datosGym
     };
   }
-
-  async findOne(id: string) {
+  //aqui solo para buscar un usuario por cedula(este o no activo)
+  async findOneCedula (cedula:string ){
+    const respuesta= await this.usaurioRepository.findOneBy({cedula})
+    if(!respuesta) throw new NotFoundException("el usuario no ha sido encontrado")
+      return respuesta;
+  }
+  //aqui para buscar un usuario que unicamente este activo y al dia con el pago
+  async findOne(cedula: string) {
     const usuario = await this.usaurioRepository.findOne({
-      where: { cedula: id },
+      where: { cedula: cedula },
      relations: {
       datosGym: true, 
     },
@@ -92,10 +98,10 @@ export class UsuariosService {
 
     return usuario;
 
-
-   
   
   }
+
+
 
   update(id: number, updateUsuarioDto: UpdateUsuarioDto) {
     return `This action updates a #${id} usuario`;
@@ -104,6 +110,9 @@ export class UsuariosService {
   remove(id: number) {
     return `This action removes a #${id} usuario`;
   }
+
+
+
 
   private manejadorError(error: any) {
     if (error?.code === '23505') {
