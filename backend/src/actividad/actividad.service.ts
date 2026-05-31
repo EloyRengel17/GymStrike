@@ -126,8 +126,7 @@ export class ActividadService {
       AND "horaSalida" IS NULL
       AND "horaEntrada" <= (CURRENT_TIMESTAMP - INTERVAL '3 hours')
   `);
-  console.log("funcoin cerrar salidas llamda con exito", dayjs())
-  // result.affectedRows (o similar dependiendo del driver) te dirá cuántos cerró
+ 
   return result.affectedRows;
   }
 }

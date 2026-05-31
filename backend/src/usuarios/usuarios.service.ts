@@ -32,17 +32,17 @@ export class UsuariosService {
 
       const { datosGym, ...datosUsuario } = createUsuarioDto;
 
-     
+
       const nuevoDatosGym = await this.datosGymRepository.create(datosGym);
 
 
 
       const nuevoUsuario = await this.usaurioRepository.create({
         ...datosUsuario,
-        datosGym:{
+        datosGym: {
           ...nuevoDatosGym,
-          fechaEntrada:fechaEntrada.toDate(),
-          fechaPago:fechaPago.toDate()
+          fechaEntrada: fechaEntrada.toDate(),
+          fechaPago: fechaPago.toDate()
         }
       })
 
@@ -65,18 +65,18 @@ export class UsuariosService {
     };
   }
   //aqui solo para buscar un usuario por cedula(este o no activo)
-  async findOneCedula (cedula:string ){
-    const respuesta= await this.usaurioRepository.findOneBy({cedula})
-    if(!respuesta) throw new NotFoundException("el usuario no ha sido encontrado")
-      return respuesta;
+  async findOneCedula(cedula: string) {
+    const respuesta = await this.usaurioRepository.findOneBy({ cedula })
+    if (!respuesta) throw new NotFoundException("el usuario no ha sido encontrado")
+    return respuesta;
   }
   //aqui para buscar un usuario que unicamente este activo y al dia con el pago
   async findOne(cedula: string) {
     const usuario = await this.usaurioRepository.findOne({
       where: { cedula: cedula },
-     relations: {
-      datosGym: true, 
-    },
+      relations: {
+        datosGym: true,
+      },
     });
 
     if (!usuario) {
@@ -87,25 +87,54 @@ export class UsuariosService {
     const fechaActual = new Date();
 
     if (!datosGym.activo || fechaActual > new Date(datosGym.fechaPago)) {
-  throw new ForbiddenException({
-    status: 403,
-    error: 'Forbidden',
-    acceso: false, 
-    code: 'MEMBERSHIP_EXPIRED', // Un código único que ayuda al frontend a saber qué pantalla mostrar
-    message: 'Acceso denegado: Membresía vencida o inactiva'
-  });
-}
+      throw new ForbiddenException({
+        status: 403,
+        error: 'Forbidden',
+        acceso: false,
+        code: 'MEMBERSHIP_EXPIRED', // Un código único que ayuda al frontend a saber qué pantalla mostrar
+        message: 'Acceso denegado: Membresía vencida o inactiva'
+      });
+    }
 
     return usuario;
 
-  
+
   }
 
+  /*
+   * Tarea programada (Cron) para la gestión de membresías.
+   * Verifica diariamente los clientes con mensualidades vencidas y cambia su casilla 'activo' de true a false en la base de datos.
+   */
+  async denegarPasoCliente() {
+  try {
+    // Desestructuramos la respuesta: _ son las filas devueltas (vacías) y filasAfectadas es el número
+    const [_, filasAfectadas] = await this.datosGymRepository.query(`
+      UPDATE datos_gym 
+      SET activo = false 
+      WHERE "fechaPago" < CURRENT_DATE AND activo= true;
+    `);
 
+    // Validamos correctamente usando la variable del conteo
+    if (filasAfectadas === 0) {
+      console.log("No ha habido modificaciones")
+      return "No ha habido modificaciones";
+    }
+
+    console.log(`Se actualizaron ${filasAfectadas} usuarios vencidos.`);
+    return { 
+      mensaje: "Usuarios actualizados correctamente", 
+      modificados: filasAfectadas 
+    };
+
+  } catch (error) {
+    this.manejadorError(error);
+  }
+}
 
   update(id: number, updateUsuarioDto: UpdateUsuarioDto) {
     return `This action updates a #${id} usuario`;
   }
+
 
   remove(id: number) {
     return `This action removes a #${id} usuario`;
@@ -118,7 +147,10 @@ export class UsuariosService {
     if (error?.code === '23505') {
       throw new BadRequestException(error.detail);
     }
+    console.log( error.detail );
     this.logger.error(error);
     throw new InternalServerErrorException('Unexpected error, check server logs');
+      
+
   }
 }

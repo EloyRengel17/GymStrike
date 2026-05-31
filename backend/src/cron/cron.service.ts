@@ -12,11 +12,13 @@ export class CronService {
     ){}
 
   @Cron('0 0 * * *') // A las 0:00
-  async handleDailyCleanup() {
-   // await this.usuarioService.actualizarEstatusInactivos();
+  async denegarPasoCliente() {
+    console.log("llamando a funoin para cambiar el estado activo del clietne")
+    await this.usuarioService.denegarPasoCliente();
   }
 
-    @Cron('0 0,30 * * * *')
+    //@Cron('0 0,30 * * * *')
+    @Interval(5000)
   async insertarSalidas() {
     
     console.log("insertarSalida desde el cron")
