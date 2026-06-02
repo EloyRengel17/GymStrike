@@ -106,30 +106,46 @@ export class UsuariosService {
    * Verifica diariamente los clientes con mensualidades vencidas y cambia su casilla 'activo' de true a false en la base de datos.
    */
   async denegarPasoCliente() {
-  try {
-    // Desestructuramos la respuesta: _ son las filas devueltas (vacías) y filasAfectadas es el número
-    const [_, filasAfectadas] = await this.datosGymRepository.query(`
-      UPDATE datos_gym 
-      SET activo = false 
-      WHERE "fechaPago" < CURRENT_DATE AND activo= true;
-    `);
+    try {
+      const [filas, cantidad] = await this.datosGymRepository.query(`
+        UPDATE datos_gym
+        SET activo = false
+        WHERE "fechaPago" < CURRENT_DATE
+          AND activo = true
+        RETURNING usuario_id;
+      `);
 
-    // Validamos correctamente usando la variable del conteo
-    if (filasAfectadas === 0) {
-      console.log("No ha habido modificaciones")
-      return "No ha habido modificaciones";
+      if (cantidad === 0) {
+        console.log("No hubo modificaciones de acceso por pago para hoy");
+        return
+      }
+
+      await Promise.all(
+        filas.map(async (fila) => {
+
+          const usuario = await this.datosGymRepository.query(
+            `SELECT nombre, apellido, telefono
+       FROM usuarios
+       WHERE id = $1`,
+            [fila.usuario_id]
+          );
+
+          const mensaje = `Hola, ${usuario[0].nombre} ${usuario[0].apellido}. Te informamos desde Gym-strike que tu pago mensual no se ha registrado. Para poder seguir disfrutando de nuestras instalaciones, te solicitamos ponerte al día con el saldo pendiente. ¡Te esperamos!`;
+          await this.WhatsappService.enviarMensajeTexto(
+            usuario[0].telefono,
+            mensaje
+          );
+
+        })
+      );
+      return {
+        modificados: cantidad,
+      };
+
+    } catch (error) {
+      this.manejadorError(error);
     }
-
-    console.log(`Se actualizaron ${filasAfectadas} usuarios vencidos.`);
-    return { 
-      mensaje: "Usuarios actualizados correctamente", 
-      modificados: filasAfectadas 
-    };
-
-  } catch (error) {
-    this.manejadorError(error);
   }
-}
 
   update(id: number, updateUsuarioDto: UpdateUsuarioDto) {
     return `This action updates a #${id} usuario`;
@@ -147,10 +163,10 @@ export class UsuariosService {
     if (error?.code === '23505') {
       throw new BadRequestException(error.detail);
     }
-    console.log( error.detail );
+    console.log(error.detail);
     this.logger.error(error);
     throw new InternalServerErrorException('Unexpected error, check server logs');
-      
+
 
   }
 }

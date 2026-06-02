@@ -11,14 +11,15 @@ export class CronService {
         private readonly actividadService:ActividadService 
     ){}
 
-  @Cron('0 0 * * *') // A las 0:00
+ // @Cron('0 0 * * *') // A las 0:00
+  @Interval(10000)
   async denegarPasoCliente() {
     console.log("llamando a funoin para cambiar el estado activo del clietne")
     await this.usuarioService.denegarPasoCliente();
   }
 
     //@Cron('0 0,30 * * * *')
-    @Interval(5000)
+   //@Interval(5000)
   async insertarSalidas() {
     
     console.log("insertarSalida desde el cron")
