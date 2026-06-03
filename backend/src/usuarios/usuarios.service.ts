@@ -65,13 +65,13 @@ export class UsuariosService {
     };
   }
   //aqui solo para buscar un usuario por cedula(este o no activo)
-  async findOneCedula(cedula: string) {
+  async  findOne(cedula: string) {
     const respuesta = await this.usaurioRepository.findOneBy({ cedula })
     if (!respuesta) throw new NotFoundException("el usuario no ha sido encontrado")
     return respuesta;
   }
-  //aqui para buscar un usuario que unicamente este activo y al dia con el pago
-  async findOne(cedula: string) {
+  //aqui para buscar un usuario que unicamente este activo y al dia con el pago 
+  async findOneCedula(cedula: string) {
     const usuario = await this.usaurioRepository.findOne({
       where: { cedula: cedula },
       relations: {
@@ -85,8 +85,9 @@ export class UsuariosService {
 
     const datosGym = usuario.datosGym;
     const fechaActual = new Date();
+    const horaActual = fechaActual.getHours(); // Devuelve un número entre 0 y 23
 
-    if (!datosGym.activo || fechaActual > new Date(datosGym.fechaPago)) {
+    if (!datosGym.activo || fechaActual > new Date(datosGym.fechaPago) || (datosGym.suscripcion === "matutino" && (horaActual < 10 || horaActual > 15)) ) {
       throw new ForbiddenException({
         status: 403,
         error: 'Forbidden',
@@ -101,20 +102,21 @@ export class UsuariosService {
 
   }
 
-  /*
-   * Tarea programada (Cron) para la gestión de membresías.
-   * Verifica diariamente los clientes con mensualidades vencidas y cambia su casilla 'activo' de true a false en la base de datos.
-   */
+  
+  //  Tarea programada (Cron) para la gestión de membresías. Verifica diariamente los clientes con mensualidades vencidas y cambia su casilla 'activo' de true a false en la base de datos.
+   
   async denegarPasoCliente() {
     try {
       const [filas, cantidad] = await this.datosGymRepository.query(`
-        UPDATE datos_gym
-        SET activo = false
-        WHERE "fechaPago" < CURRENT_DATE
-          AND activo = true
-        RETURNING usuario_id;
-      `);
-
+          UPDATE datos_gym dg
+          SET activo = false
+          FROM usuarios u
+          WHERE dg.usuario_id = u.id -- Aquí haces la relación entre ambas tablas
+            AND dg."fechaPago" < CURRENT_DATE
+            AND dg.activo = true
+            AND u."tipoUsuario" = 'cliente' -- Aquí filtras por el tipo de usuario
+          RETURNING dg.usuario_id;
+        `);
       if (cantidad === 0) {
         console.log("No hubo modificaciones de acceso por pago para hoy");
         return
@@ -147,6 +149,43 @@ export class UsuariosService {
     }
   }
 
+  //funcion para enviar notificaion al cliente para que recuerde cuanto tiempo le queda de entrada al gimansio
+  async AlertarUSuarioPago() {
+    try {
+      const filas = await this.datosGymRepository.query(`
+          SELECT 
+    u.nombre, 
+    u.apellido, 
+    u.telefono,
+    dg."fechaPago",
+    (dg."fechaPago" - CURRENT_DATE) AS dias_restantes -- dice exactamente cuántos días faltan (3, 2 o 1)
+FROM usuarios u
+INNER JOIN datos_gym dg ON u.id = dg.usuario_id -- Unimos las dos tablas
+WHERE u."tipoUsuario" = 'cliente'
+  AND dg.activo = true --validar que su plan actual esté activo
+  --  diferencia sea entre 1 y 3 días:
+  AND (dg."fechaPago" - CURRENT_DATE) BETWEEN 1 AND 3;
+        `);
+        //utilizar este for par poder ejecutarlo de manera asincrona y no enviar toda la infromacion de golpe
+      for (const fila of filas) {
+        //codigo recuperado por la ia para sanitizar la fecha 
+        const fechaObj = new Date(fila.fechaPago);
+        const fechaLimpia = fechaObj.toLocaleDateString('es-ES', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+
+        const mensaje = `Hola, ${fila.nombre} ${fila.apellido}. Te recordamos desde Gym-Strike que tu plan está próximo a vencer (quedan ${fila.dias_restantes} días). Para seguir disfrutando de nuestras instalaciones, recuerda realizar tu pago antes del ${fechaLimpia}. ¡Te esperamos!`;
+        await this.WhatsappService.enviarMensajeTexto(fila.telefono, mensaje);
+      }
+
+
+    } catch (error) {
+      this.manejadorError(error);
+    }
+  }
   update(id: number, updateUsuarioDto: UpdateUsuarioDto) {
     return `This action updates a #${id} usuario`;
   }

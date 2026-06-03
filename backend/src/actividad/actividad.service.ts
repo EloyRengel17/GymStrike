@@ -19,7 +19,7 @@ export class ActividadService {
 
   async create(createActividadDto: CreateActividadDto) {
     //busca un usuario con una funcino propia del moduilo de usuarios
-    const respuesta = await this.usuariosService.findOne(createActividadDto.cedula);
+    const respuesta = await this.usuariosService.findOneCedula(createActividadDto.cedula);
      
     
     if(respuesta){
