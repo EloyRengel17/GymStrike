@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { WhatsappService } from 'src/whatsapp/whatsapp.service';
 import dayjs from 'dayjs';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 
 @Injectable()
@@ -55,13 +56,18 @@ export class UsuariosService {
     }
   }
 
-  async findAll() {
-    const usuario = await this.usaurioRepository.find();
-    const datosGym = await this.datosGymRepository.find();
+  async findAll(paginationDto:PaginationDto) {
 
+      const {limit=10, offset=0}=paginationDto 
+    const usuario = await this.usaurioRepository.find({
+    take:limit,
+    skip: offset
+    })
+    
+    //localhost:3000/usuarios?limit=2&offset=1
     return {
       usuario: usuario,
-      datosGym: datosGym
+      
     };
   }
   //aqui solo para buscar un usuario por cedula(este o no activo)

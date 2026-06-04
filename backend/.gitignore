@@ -11,7 +11,9 @@ pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
-
+# WhatsApp Web.js auth and cache
+.wwebjs_auth/
+.wwebjs_cache/
 # OS
 .DS_Store
 
