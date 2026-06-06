@@ -1,6 +1,6 @@
-import { Column, Entity, ManyToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToMany,OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { DatosGym } from "./datosGym.entity"; // Importación corregida en mayúscula
-
+import { PagosHistorial } from "src/stripe/entities/pagos_historial.entity";
 @Entity('usuarios') // Corregido typo 'usaurios'
 export class Usuario {
     @PrimaryGeneratedColumn()
@@ -27,4 +27,6 @@ export class Usuario {
     @OneToOne(() => DatosGym, (datosGym) => datosGym.usuario, { cascade: true, eager: true })
     datosGym: DatosGym; 
 
+    @OneToMany(() => PagosHistorial, (pago) => pago.usuario)
+    pagos?: PagosHistorial[];
 }

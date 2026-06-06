@@ -8,6 +8,7 @@ import { ActividadModule } from './actividad/actividad.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { CronModule } from './cron/cron.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { StripeModule } from './stripe/stripe.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 
     ScheduleModule.forRoot(),
     CronModule,
+    StripeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

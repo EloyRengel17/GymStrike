@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { Usuario } from './entities/usuario.entity';
@@ -30,7 +30,8 @@ export class UsuariosService {
     try {
       const fechaEntrada = dayjs();
       const fechaPago = fechaEntrada.add(1, 'month');
-
+   
+      
       const { datosGym, ...datosUsuario } = createUsuarioDto;
 
 
@@ -63,7 +64,7 @@ export class UsuariosService {
     take:limit,
     skip: offset
     })
-    
+     
     //localhost:3000/usuarios?limit=2&offset=1
     return {
       usuario: usuario,
@@ -92,7 +93,7 @@ export class UsuariosService {
     const datosGym = usuario.datosGym;
     const fechaActual = new Date();
     const horaActual = fechaActual.getHours(); // Devuelve un número entre 0 y 23
-
+    //verifica si esta actvio, si aun esta ene la fecha de pago, y si dependdiendo de la hora de entrada puede hacerlo
     if (!datosGym.activo || fechaActual > new Date(datosGym.fechaPago) || (datosGym.suscripcion === "matutino" && (horaActual < 10 || horaActual > 15)) ) {
       throw new ForbiddenException({
         status: 403,
@@ -192,8 +193,25 @@ WHERE u."tipoUsuario" = 'cliente'
       this.manejadorError(error);
     }
   }
-  update(id: number, updateUsuarioDto: UpdateUsuarioDto) {
-    return `This action updates a #${id} usuario`;
+  async update(id: number, updateUsuarioDto: UpdateUsuarioDto) {
+   try {
+    
+    const usuarioParaActualizar = await this.usaurioRepository.preload({
+      id: id,
+      ...updateUsuarioDto,
+    });
+
+    
+    if (!usuarioParaActualizar) {
+      throw new NotFoundException(`El usuario con el ID ${id} no fue encontrado.`);
+    }
+
+    
+    return await this.usaurioRepository.save(usuarioParaActualizar);
+
+  } catch (error) {
+    this.manejadorError(error);
+  }
   }
 
 
