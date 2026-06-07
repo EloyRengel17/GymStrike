@@ -1,15 +1,33 @@
-import { Injectable } from '@nestjs/common';
-import { CreateStripeDto } from './dto/create-stripe.dto';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { PlanesSuscripcionDto } from './dto/create-stripe.dto';
 import { UpdateStripeDto } from './dto/update-stripe.dto';
-
+import { InjectRepository } from '@nestjs/typeorm';
+import { PlanesSuscripcion } from './entities/planes_suscripcion.entity';
+import { PagosHistorial } from './entities/pagos_historial.entity';
+import { Repository } from 'typeorm';
 @Injectable()
 export class StripeService {
-  create(createStripeDto: CreateStripeDto) {
-    return 'This action adds a new stripe';
+  
+    constructor(
+    @InjectRepository(PlanesSuscripcion)
+    private readonly planesSuscripcionRepository: Repository<PlanesSuscripcion>,
+
+    @InjectRepository(PagosHistorial)
+    private readonly pagosHistorialRepository:Repository<PagosHistorial>
+    
+    ){}
+  async create(createPlanesSuscripcionDto: PlanesSuscripcionDto) {
+    try{
+     const result= await this.planesSuscripcionRepository.create(createPlanesSuscripcionDto)
+     const crearPlan=await this.planesSuscripcionRepository.save(result)
+     return crearPlan;
+     }catch(error){
+      console.log(error)
+     }
   }
 
   findAll() {
-    return `This action returns all stripe`;
+    return this.planesSuscripcionRepository.find();
   }
 
   findOne(id: number) {

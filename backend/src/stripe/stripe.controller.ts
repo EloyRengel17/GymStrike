@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { StripeService } from './stripe.service';
-import { CreateStripeDto } from './dto/create-stripe.dto';
+import { PlanesSuscripcionDto } from './dto/create-stripe.dto';
 import { UpdateStripeDto } from './dto/update-stripe.dto';
 
 @Controller('stripe')
@@ -8,8 +8,8 @@ export class StripeController {
   constructor(private readonly stripeService: StripeService) {}
 
   @Post()
-  create(@Body() createStripeDto: CreateStripeDto) {
-    return this.stripeService.create(createStripeDto);
+  create(@Body() createPlanesSuscripcionDto: PlanesSuscripcionDto) {
+    return this.stripeService.create(createPlanesSuscripcionDto);
   }
 
   @Get()
