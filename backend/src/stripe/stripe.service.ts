@@ -5,25 +5,46 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { PlanesSuscripcion } from './entities/planes_suscripcion.entity';
 import { PagosHistorial } from './entities/pagos_historial.entity';
 import { Repository } from 'typeorm';
+import { PagohistorialDto } from './dto/createPagosHistorial.dto';
 @Injectable()
 export class StripeService {
-  
-    constructor(
+
+  constructor(
     @InjectRepository(PlanesSuscripcion)
     private readonly planesSuscripcionRepository: Repository<PlanesSuscripcion>,
 
     @InjectRepository(PagosHistorial)
-    private readonly pagosHistorialRepository:Repository<PagosHistorial>
-    
-    ){}
-  async create(createPlanesSuscripcionDto: PlanesSuscripcionDto) {
-    try{
-     const result= await this.planesSuscripcionRepository.create(createPlanesSuscripcionDto)
-     const crearPlan=await this.planesSuscripcionRepository.save(result)
-     return crearPlan;
-     }catch(error){
+    private readonly pagosHistorialRepository: Repository<PagosHistorial>
+
+  ) { }
+  async createPlanesSuscripcion(createPlanesSuscripcionDto: PlanesSuscripcionDto) {
+    try {
+      const result = await this.planesSuscripcionRepository.create(createPlanesSuscripcionDto)
+      const crearPlan = await this.planesSuscripcionRepository.save(result)
+      return crearPlan;
+    } catch (error) {
       console.log(error)
-     }
+    }
+  }
+
+  async createPagoHistorial(createPagoHistorialDto: PagohistorialDto) {
+    try {
+      // NOTA: Mapeo manual de relaciones.
+      // El DTO solo envía 'usuarioID' (un number), pero la Entidad espera un objeto de tipo Usuario.
+      // Envolver el ID en un objeto { id: dto.usuarioId } permite que TypeORM inserte la FK directamente en Postgres.
+      const result = await this.pagosHistorialRepository.create({
+        stripePaymentIntentId: createPagoHistorialDto.stripePaymentIntentId,
+        montoPagado: createPagoHistorialDto.montoPagado,
+        fechaPago: createPagoHistorialDto.fechaPago,
+        usuario: { id: createPagoHistorialDto.usuario },
+        plan: { id: createPagoHistorialDto.plan } // Si tu relación se llama plan o pago, adáptalo aquí
+      });
+      const crearPagoHistorial = await this.pagosHistorialRepository.save(result);
+      return crearPagoHistorial
+
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   findAll() {

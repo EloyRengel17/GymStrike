@@ -5,7 +5,7 @@ export class PlanesSuscripcion {
     @PrimaryGeneratedColumn()
     id:number;
 
-    @Column()
+    @Column({unique:true})
     nombre: string;
 
     @Column()

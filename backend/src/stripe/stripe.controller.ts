@@ -2,14 +2,18 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { StripeService } from './stripe.service';
 import { PlanesSuscripcionDto } from './dto/create-stripe.dto';
 import { UpdateStripeDto } from './dto/update-stripe.dto';
-
+import { PagohistorialDto } from './dto/createPagosHistorial.dto';
 @Controller('stripe')
 export class StripeController {
   constructor(private readonly stripeService: StripeService) {}
 
   @Post()
   create(@Body() createPlanesSuscripcionDto: PlanesSuscripcionDto) {
-    return this.stripeService.create(createPlanesSuscripcionDto);
+    return this.stripeService.createPlanesSuscripcion(createPlanesSuscripcionDto);
+  }
+  @Post("pagoHistorial")
+  createPagoHistoorial(@Body() createPagoHistorialDto: PagohistorialDto){
+    return this.stripeService.createPagoHistorial(createPagoHistorialDto)
   }
 
   @Get()
