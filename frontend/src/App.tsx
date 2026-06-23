@@ -11,6 +11,7 @@ const Input = () => {
 
     if (!cedula.trim()) {
       alert("Por favor, ingrese una cédula válida.");
+      console.log("POr favor, INgrese una cedula Valida.")
       return;
     }
 
@@ -105,4 +106,8 @@ export default Input;
 
     obtenerUsuarios();
   }, []);
+*/
+
+/*
+Tengo que empezar a hacer la pagina del login y tambien del ingreso, y tambein tengo que utilizar recursos propios de stripe para poder hacerf el froneted del apgo
 */
