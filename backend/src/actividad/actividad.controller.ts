@@ -22,6 +22,10 @@ export class ActividadController {
     return this.actividadService.findOne(id);
   }
 
+  @Get('historial/:cedula')
+async getHistorial(@Param('cedula') cedula: string) {
+  return await this.actividadService.obtenerFechasAsistencia(cedula);
+}
 
 
 }

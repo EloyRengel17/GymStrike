@@ -23,6 +23,9 @@ export class Usuario {
 
     @Column()
     tipoUsuario: string; // 'admin', 'entrenador', 'cliente'
+
+    @Column({nullable: true, select:false})
+    clave: string
     
     @OneToOne(() => DatosGym, (datosGym) => datosGym.usuario, { cascade: true, eager: true })
     datosGym: DatosGym; 

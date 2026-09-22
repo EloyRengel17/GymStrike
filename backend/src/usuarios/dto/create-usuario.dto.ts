@@ -1,4 +1,4 @@
-import { IsInt, IsString, IsBoolean, IsDate, ValidateNested,IsNotEmpty, IsOptional, IsPhoneNumber } from "class-validator";
+import { IsInt, IsString, IsBoolean, IsDate, ValidateNested,IsNotEmpty, IsOptional, IsPhoneNumber, MinLength } from "class-validator";
 import { Type } from 'class-transformer';
 import { IsNull } from "typeorm";
 
@@ -43,6 +43,11 @@ export class CreateUsuarioDto {
     @IsString()
     @IsNotEmpty()
     tipoUsuario: string;
+    
+    @IsString()
+    @IsOptional()
+    @MinLength(6, {message: 'La clave debe tener al menos 6 caracteres'})
+    clave?: string;
 
     @ValidateNested()
     @Type(()=>CreateDatosGymDto)

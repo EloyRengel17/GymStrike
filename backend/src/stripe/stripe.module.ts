@@ -4,8 +4,9 @@ import { StripeController } from './stripe.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PlanesSuscripcion } from './entities/planes_suscripcion.entity';
 import { PagosHistorial } from './entities/pagos_historial.entity';
+import { DatosGym } from 'src/usuarios/entities/datosGym.entity';
 @Module({
-  imports: [TypeOrmModule.forFeature([PlanesSuscripcion, PagosHistorial])],
+  imports: [TypeOrmModule.forFeature([PlanesSuscripcion, PagosHistorial, DatosGym])],
   controllers: [StripeController],
   providers: [StripeService],
 })

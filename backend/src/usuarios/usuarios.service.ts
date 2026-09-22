@@ -1,4 +1,4 @@
-import { BadGatewayException, BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { Usuario } from './entities/usuario.entity';
@@ -8,7 +8,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { WhatsappService } from 'src/whatsapp/whatsapp.service';
 import dayjs from 'dayjs';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
-
+import * as bcrypt from 'bcrypt';
+import { ILike } from 'typeorm';
 
 @Injectable()
 export class UsuariosService {
@@ -109,7 +110,29 @@ export class UsuariosService {
 
   }
 
-  
+  // funcion para la app y, esta se usa en el login 
+async checkCedulaForAuth(cedula: string) {
+  const usuario = await this.usaurioRepository.findOne({
+    where: { cedula },
+    select: {
+      id: true,
+      cedula: true,
+      nombre: true,
+      clave: true, // Forzamos a TypeORM a traer la clave aunque tenga select: false
+    },
+  });
+
+  if (!usuario) {
+    throw new NotFoundException('El usuario no ha sido encontrado');
+  }
+
+  return {
+    id: usuario.id,
+    cedula: usuario.cedula,
+    nombre: usuario.nombre,
+    hasPassword: usuario.clave !== null && usuario.clave !== undefined && usuario.clave !== '',
+  };
+}
   //  Tarea programada (Cron) para la gestión de membresías. Verifica diariamente los clientes con mensualidades vencidas y cambia su casilla 'activo' de true a false en la base de datos.
    
   async denegarPasoCliente() {
@@ -193,27 +216,77 @@ WHERE u."tipoUsuario" = 'cliente'
       this.manejadorError(error);
     }
   }
-  async update(id: number, updateUsuarioDto: UpdateUsuarioDto) {
-   try {
-    
+
+  async validateUser(cedula: string, claveIngresada: string) {
+   const cedulaLimpia = cedula.trim();
+  console.log('Cédula recibida en backend:', cedulaLimpia, 'Tipo:', typeof cedulaLimpia);
+
+  // --- INICIO DEPURACIÓN ---
+  // 1. Ver qué base de datos/tabla está consultando realmente TypeORM
+  const todos = await this.usaurioRepository.find({ take: 5 });
+  console.log('Muestra de usuarios en BD:', todos.map(u => ({ id: u.id, cedula: u.cedula, tipoCedula: typeof u.cedula })));
+
+  // 2. Probar consulta directa con Raw Query (por si hay un tema de mapeo en la entidad)
+  const rawUser = await this.usaurioRepository.query(
+    `SELECT * FROM usuarios WHERE cedula = $1`, [cedulaLimpia]
+  );
+  console.log('Resultado Query Raw:', rawUser);
+  // --- FIN DEPURACIÓN ---
+
+  const usuario = await this.usaurioRepository.findOne({
+    where: { cedula: ILike(cedulaLimpia) },
+    select: {
+      id: true,
+      cedula: true,
+      nombre: true,
+      clave: true,
+    },withDeleted: true,
+  });
+
+  if (!usuario) {
+    throw new NotFoundException('El usuario no existe.');
+  }
+
+    if (!usuario.clave) {
+      throw new UnauthorizedException('El usuario aún no ha configurado una contraseña.');
+    }
+
+    // 2. Comparamos la clave en texto plano con el hash de la BD
+    const esClaveValida = await bcrypt.compare(claveIngresada, usuario.clave);
+
+    if (!esClaveValida) {
+      throw new UnauthorizedException('Contraseña incorrecta.');
+    }
+
+    // 3. Omitimos la clave antes de responder
+    const { clave, ...resultado } = usuario;
+    return resultado;
+  }
+
+ async update(id: number, updateUsuarioDto: UpdateUsuarioDto) {
+  try {
+    const { datosGym, ...datosPersonales } = updateUsuarioDto as any;
+
     const usuarioParaActualizar = await this.usaurioRepository.preload({
       id: id,
-      ...updateUsuarioDto,
+      ...datosPersonales,
     });
 
-    
     if (!usuarioParaActualizar) {
       throw new NotFoundException(`El usuario con el ID ${id} no fue encontrado.`);
     }
 
-    
+    // Si el usuario envió una contraseña (en el primer ingreso o al cambiarla), la encriptamos
+    if (datosPersonales.clave) {
+      usuarioParaActualizar.clave = await bcrypt.hash(datosPersonales.clave, 10);
+    }
+
     return await this.usaurioRepository.save(usuarioParaActualizar);
 
   } catch (error) {
     this.manejadorError(error);
   }
-  }
-
+}
 
   remove(id: number) {
     return `This action removes a #${id} usuario`;

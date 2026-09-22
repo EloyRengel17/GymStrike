@@ -9,6 +9,8 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { CronModule } from './cron/cron.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { StripeModule } from './stripe/stripe.module';
+import { ConsultasPowerBiModule } from './consultas-power-bi/consultas-power-bi.module';
+import { LoginPcModule } from './login-pc/login-pc.module';
 
 @Module({
   imports: [
@@ -42,6 +44,8 @@ import { StripeModule } from './stripe/stripe.module';
     ScheduleModule.forRoot(),
     CronModule,
     StripeModule,
+    ConsultasPowerBiModule,
+    LoginPcModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -11,99 +11,106 @@ export class ActividadService {
 
   constructor(
     @InjectRepository(Actividad)
-    private readonly actividadRepository:Repository<Actividad>,
+    private readonly actividadRepository: Repository<Actividad>,
 
     private readonly usuariosService: UsuariosService
-  ){}
+  ) { }
 
 
   async create(createActividadDto: CreateActividadDto) {
     //busca un usuario con una funcino propia del moduilo de usuarios
     const respuesta = await this.usuariosService.findOneCedula(createActividadDto.cedula);
-     
-    
-    if(respuesta){
+
+
+    if (respuesta) {
       //Buscar la ceudla en la tabala AccesoGym para ver si ya entró 
-      const comprobacionEntrada= await this.comprobacionEntrada(createActividadDto.cedula)
+      const comprobacionEntrada = await this.comprobacionEntrada(createActividadDto.cedula)
 
       //si no hubo resultados entonces crearara un nuevo registro, quiero decri que el dia de hoy la persona no ha entrado
-      if(!comprobacionEntrada ){
-        const horaEntrada= dayjs();
+      if (!comprobacionEntrada) {
+        const horaEntrada = dayjs();
 
-      const instanciaActividad= await this.actividadRepository.create({
-        cedula:createActividadDto.cedula,
-        horaEntrada: horaEntrada.toDate(),
-        tipoUsuario: respuesta.tipoUsuario
-      })
-      const crearActividad= await this.actividadRepository.save(instanciaActividad)
-      return crearActividad;
+        const instanciaActividad = await this.actividadRepository.create({
+          cedula: createActividadDto.cedula,
+          horaEntrada: horaEntrada.toDate(),
+          tipoUsuario: respuesta.tipoUsuario
+        })
+        const crearActividad = await this.actividadRepository.save(instanciaActividad)
+        return {
+          success: true,
+          message: '¡Bienvenido al gimnasio! Acceso concedido.'
+        };
 
       }
-      const horaSalida= dayjs();
-      this.update(horaSalida.toDate(), createActividadDto.cedula)
+      const horaSalida = dayjs();
+      await this.update(horaSalida.toDate(), createActividadDto.cedula)
+      return {
+        success: true,
+        message: '¡Salida registrada con éxito, vuelve pronto!'
+      };
     }
-    
+
   }
 
-  async findAll(contarActivos:boolean) {
-     console.log("ejecutandose funcion de reconteo de clientes en el gimanasio")
-  //para buscar la cantidad de personas entrenando en el gimansio, 
-    if(contarActivos){
-      const cantidad= await this.actividadRepository.count({
-        where:{
+  async findAll(contarActivos: boolean) {
+    console.log("ejecutandose funcion de reconteo de clientes en el gimanasio")
+    //para buscar la cantidad de personas entrenando en el gimansio, 
+    if (contarActivos) {
+      const cantidad = await this.actividadRepository.count({
+        where: {
           horaSalida: IsNull(),
           tipoUsuario: 'cliente'
         }
       });
-     
-      return {cantidadPersonas:cantidad};
+
+      return { cantidadPersonas: cantidad };
     }
 
     //si no entra el parametro comom true, devolvera es los datos de la tabla de activdad
-    const result=  await this.actividadRepository.find();
-    if(result.length==0){
+    const result = await this.actividadRepository.find();
+    if (result.length == 0) {
       return "no hay usuarios para mostrar"
     }
     return result
   }
 
-  async comprobacionEntrada(cedula: string){
-    const result= await this.actividadRepository.query(`
+  async comprobacionEntrada(cedula: string) {
+    const result = await this.actividadRepository.query(`
     SELECT * FROM "AccesoGym" 
     WHERE cedula =$1
     AND Date("horaEntrada")=CURRENT_DATE
     AND "horaSalida" IS NULL
-    `,[cedula]) 
+    `, [cedula])
 
     return result.length > 0 ? result[0] : null;
   }
-  
+
   //aqui buscamos u registro, independientemente que este activo o no
-    async findOne(cedula: string) {
-  
-  const usuario = await this.usuariosService.findOneCedula(cedula);
-  
-  if (!usuario) return usuario;
+  async findOne(cedula: string) {
 
-  // Buscamos las actividades
-  const actividades = await this.actividadRepository.find({
-    where: { cedula },
-    order: { horaEntrada: 'DESC' }
-  });
+    const usuario = await this.usuariosService.findOneCedula(cedula);
 
-  if (actividades.length === 0) throw new BadRequestException('No se han encontrado registros de actividades para esta cédula');
-  
+    if (!usuario) return usuario;
 
-  
-  return actividades.map(actividad => ({
-    nombre: usuario.nombre,
-    apellido: usuario.apellido,
-    horaEntrada: actividad.horaEntrada,
-    horaSalida: actividad.horaSalida
-  }));
-}
+    // Buscamos las actividades
+    const actividades = await this.actividadRepository.find({
+      where: { cedula },
+      order: { horaEntrada: 'DESC' }
+    });
 
-  async update(horaSalida:Date, cedula:string) {
+    if (actividades.length === 0) throw new BadRequestException('No se han encontrado registros de actividades para esta cédula');
+
+
+
+    return actividades.map(actividad => ({
+      nombre: usuario.nombre,
+      apellido: usuario.apellido,
+      horaEntrada: actividad.horaEntrada,
+      horaSalida: actividad.horaSalida
+    }));
+  }
+
+  async update(horaSalida: Date, cedula: string) {
     await this.actividadRepository.query(`
     UPDATE "AccesoGym"
     SET "horaSalida" = $1
@@ -113,20 +120,36 @@ export class ActividadService {
   `, [horaSalida, cedula]);
   }
 
+  async obtenerFechasAsistencia(cedula: string): Promise<string[]> {
+    const accesos = await this.actividadRepository.find({
+      where: { cedula },
+      select: {
+        horaEntrada: true, // <-- Objeto de selección válido en TypeORM
+      },
+    });
+
+    // Extraer solo la parte YYYY-MM-DD sin repetir fechas si fue 2 veces el mismo día
+    const fechasUnicas = new Set(
+      accesos.map(acc => new Date(acc.horaEntrada).toISOString().split('T')[0])
+    );
+
+    return Array.from(fechasUnicas);
+    // Devuelve un arreglo tipo: ["2026-05-28", "2026-06-03", "2026-09-05", "2026-09-07"]
+  }
   remove(id: number) {
     return `This action removes a #${id} actividad`;
   }
 
-  async cerrarSalidasAutomaticamente(){
-    
-   const result = await this.actividadRepository.query(`
+  async cerrarSalidasAutomaticamente() {
+
+    const result = await this.actividadRepository.query(`
     UPDATE "AccesoGym"
     SET "horaSalida" = CURRENT_TIMESTAMP
     WHERE "tipoUsuario" = 'cliente'
       AND "horaSalida" IS NULL
       AND "horaEntrada" <= (CURRENT_TIMESTAMP - INTERVAL '3 hours')
   `);
- 
-  return result.affectedRows;
+
+    return result.affectedRows;
   }
 }
