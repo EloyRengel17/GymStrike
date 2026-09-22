@@ -21,26 +21,39 @@ import { LoginPcModule } from './login-pc/login-pc.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      // Recibes la instancia 'configService' aquí:
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        // Usas la instancia minúscula que recibiste:
-        host: configService.get<string>('BD_HOST'),
-        port: 5433,
-        username: configService.get<string>('DB_USER'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_NAME'),
-        autoLoadEntities: true,
-        synchronize: true,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const dbUrl = configService.get<string>('DATABASE_URL');
+
+        // Si existe DATABASE_URL (Entorno Render)
+        if (dbUrl) {
+          return {
+            type: 'postgres',
+            url: dbUrl,
+            autoLoadEntities: true,
+            synchronize: true,
+            ssl: {
+              rejectUnauthorized: false, // Requerido por Render para conexiones SSL
+            },
+          };
+        }
+
+        // Si no existe, usa la configuración local (.env)
+        return {
+          type: 'postgres',
+          host: configService.get<string>('BD_HOST', 'localhost'),
+          port: configService.get<number>('DB_PORT', 5433),
+          username: configService.get<string>('DB_USER', 'postgres'),
+          password: configService.get<string>('DB_PASSWORD', ''),
+          database: configService.get<string>('DB_NAME', 'gymstrike'),
+          autoLoadEntities: true,
+          synchronize: true,
+        };
+      },
     }),
 
     UsuariosModule,
-
     ActividadModule,
-
     WhatsappModule,
-
     ScheduleModule.forRoot(),
     CronModule,
     StripeModule,
