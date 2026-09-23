@@ -1,7 +1,18 @@
-# Imagen oficial de Node.js
+# 1. Etapa de Construcción
+FROM node:18-slim AS builder
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+# 2. Etapa de Ejecución (Producción)
 FROM node:18-slim
 
-# Instalar Chromium y sus dependencias de sistema operativo
+# Instalar Chromium y dependencias de sistema para Puppeteer
 RUN apt-get update && apt-get install -y \
     chromium \
     fonts-liberation \
@@ -41,18 +52,18 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Indicamos a Puppeteer que use el Chromium que acabamos de instalar en Linux
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 WORKDIR /usr/src/app
 
 COPY package*.json ./
-RUN npm install
+RUN npm install --only=production
 
-COPY . .
-RUN npm run build
+# Copiamos la carpeta dist generada en la etapa de build
+COPY --from=builder /usr/src/app/dist ./dist
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start:prod"]
+# Ejecutamos directamente el archivo main.js compilado
+CMD ["node", "dist/main.js"]
