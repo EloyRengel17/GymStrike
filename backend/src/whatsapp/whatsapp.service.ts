@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import * as qrcode from 'qrcode-terminal';
 import * as puppeteer from 'puppeteer';
+
 @Injectable()
 export class WhatsappService implements OnModuleInit {
     private client!: Client;
@@ -21,28 +22,30 @@ export class WhatsappService implements OnModuleInit {
             }
         }
 
+        // Si existe la variable en Render la usa, si no, usa la por defecto de Puppeteer en local
+        const customExecutablePath = process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath();
+
         this.client = new Client({
-           authStrategy: new LocalAuth(),
-  puppeteer: {
-    headless: true,
-    executablePath: puppeteer.executablePath(), // 👈 Obliga a Puppeteer a usar el ejecutable recién instalado
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process',
-      '--disable-gpu',
-    ],
+            authStrategy: new LocalAuth(),
+            puppeteer: {
+                headless: true,
+                executablePath: customExecutablePath,
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--single-process',
+                    '--disable-gpu',
+                ],
             }
         });
 
         this.client.on('qr', (qr) => {
             this.latestQr = qr;       
             this.isConnected = false;
-          //  console.log('🤖 Nuevo código QR generado. Escanéalo con WhatsApp:');
             qrcode.generate(qr, { small: true });
         });
 
