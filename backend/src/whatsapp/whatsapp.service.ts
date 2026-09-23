@@ -13,7 +13,6 @@ export class WhatsappService implements OnModuleInit {
     }
 
     private initializeClient() {
-        // Si ya existía una instancia previa, la destruimos limpiamente antes de recrearla
         if (this.client) {
             try {
                 this.client.destroy();
@@ -26,13 +25,16 @@ export class WhatsappService implements OnModuleInit {
             authStrategy: new LocalAuth(),
             puppeteer: {
                 headless: true,
+                // Si existe la variable de entorno la usa; si no, deja que Puppeteer use la predeterminada
+                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
                 args: [
-                    '--no-sandbox', 
+                    '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
                     '--disable-accelerated-2d-canvas',
                     '--no-first-run',
                     '--no-zygote',
+                    '--single-process',
                     '--disable-gpu'
                 ],
             }
@@ -60,7 +62,6 @@ export class WhatsappService implements OnModuleInit {
             console.error('❌ Error de autenticación en WhatsApp:', msg);
         });
 
-        // Si se desconecta o hay error de navegación, reintentamos inicializar solo después de unos segundos
         this.client.on('disconnected', (reason) => {
             this.isConnected = false;
             this.latestQr = '';
@@ -71,7 +72,6 @@ export class WhatsappService implements OnModuleInit {
             }, 5000);
         });
 
-        // Inicializamos atrapando cualquier error de navegación de Puppeteer para auto-recuperarnos
         this.client.initialize().catch((err) => {
             console.error('⚠️ Error al inicializar (posible navegación/contexto destruido):', err.message);
             console.log('🔄 Reiniciando cliente debido al error de inicio...');
