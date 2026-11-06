@@ -5,8 +5,8 @@ import { WhatsappService } from './whatsapp.service';
 export class WhatsappController {
   constructor(private readonly whatsappService: WhatsappService) {}
 
-  @Get('qr')
-  getQr() {
+ /* @Get('qr')
+ getQr() {
     return this.whatsappService.getQrStatus();
-  }
+  }*/
 }

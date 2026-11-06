@@ -10,7 +10,8 @@ export class WhatsappService implements OnModuleInit {
     private isConnected: boolean = false;
 
     onModuleInit() {
-        this.initializeClient();
+       // this.initializeClient();
+       console.log('WhatsApp deshabilitado temporalmente en local.');
     }
 
     private initializeClient() {
