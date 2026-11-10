@@ -1,3 +1,4 @@
+> **English:** Gym access-control and management system. NestJS REST API with PostgreSQL, React admin panel, Docker. Web panel done; mobile app in development.
 # GymStrike
 
 Sistema de control de acceso y gestión para gimnasios. Permite registrar clientes, administrar sus membresías y pagos, y validar la entrada al local. Está hecho con un backend en NestJS y un panel de administración web en React.
